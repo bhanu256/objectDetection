@@ -1,0 +1,99 @@
+<html>
+    <head>
+        <title>Detect objects</title>
+    </head>
+    <body>
+
+        <script type="text/javascript">
+
+            function checkUrl(url){
+                // checks whether the entered url is empty
+                if(url != "" || url != null){
+                    return true;
+                }
+                else{
+                    alert("Please enter url");
+                    document.getElementById("procIndicator").value = "Enter url";
+                    return false;
+                }
+            }
+            
+            function processImg(){
+                var imgUrl = document.getElementById('inputUrl').value;
+                document.getElementById('procIndicator').style.opacity = "100%";
+                if(imgUrl){
+
+                    var xmlHttp = new XMLHttpRequest();
+                    xmlHttp.onreadystatechange = function(){
+
+                        // process indicator
+                        var dots = ""
+                        var interval = setInterval(() => {
+                            if(this.readyState == 4){
+                                clearInterval(interval);
+                                return;
+                            }
+                            dots = (dots.length < 3) ? (dots + ".") : "";
+                            document.getElementById('procIndicator').innerHTML = "Processing" + dots;
+                        }, 500);
+
+                        try{
+                            // successful execution
+                            if(this.readyState == 4 && this.status == 200){
+                                var response = JSON.parse(this.responseText);
+
+                                var labelsDetected = "";
+                                labelsDetected += "Detected labels are: \n";
+
+                                for(label of Object.values(response['result'])){
+                                    labelsDetected += label.Name + "\n";   
+                                }
+
+                                document.getElementById('jsonArea').innerHTML = JSON.stringify(response['result']);
+                                document.getElementById('resultArea').innerHTML = labelsDetected;
+                                document.getElementById('procIndicator').innerHTML = "DONE.";
+                            }
+                            // internal server error
+                            else if(this.status == 500){
+                                throw "server error!!";
+                            }
+                        }
+                        catch(err){
+                            alert("Unable to process your image. Please, try again.");
+                            document.getElementById('procIndicator').value = "Error";
+                        }
+
+                    }
+                    xmlHttp.open("POST", "objects.php", true);
+                    xmlHttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+                    xmlHttp.send("imgUrl="+imgUrl);
+                }
+            }
+        </script>
+
+        <h1>Object Detection</h1>
+        <p>Enter image url for getting <strong>labels in screen </strong></p>
+
+        <div id="wrapper" style="display: flex;">
+
+            <!-- Input Div -->
+            <div id="inputDiv" style="flex: 50%;">
+                <h3>Object Analysis</h3>
+                <form action="" onsubmit="processImg(); return false;">
+                    <input type="text" id="inputUrl" value="" placeholder="Please enter image url" />
+                    <button type="submit">Submit</button>
+                    <p id="procIndicator" style="opacity: 0%;">Processing</p>
+                </form>
+            </div>
+
+            <!-- Output Div -->
+            <div id="outputDiv" style="flex: 50%;">
+                <h3>Results :</h3>
+                <textarea id="resultArea" class="UIInput" style="width:80%; height:400px;"></textarea>
+                <br>
+                <h3>Json :</h3>
+                <textarea id="jsonArea" class="UIInput" style="width:80%; height:400px;"></textarea>
+            </div>
+        </div>
+    </body>
+</html>
